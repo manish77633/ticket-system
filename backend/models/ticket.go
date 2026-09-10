@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 const (
 	StatusOpen       = "open"
@@ -9,10 +13,10 @@ const (
 )
 
 type Ticket struct {
-	ID          int64     `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Status      string    `json:"status"`
-	UserID      int64     `json:"user_id"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Title       string             `bson:"title" json:"title"`
+	Description string             `bson:"description" json:"description"`
+	Status      string             `bson:"status" json:"status"`
+	UserID      primitive.ObjectID `bson:"user_id" json:"user_id"`
+	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
 }

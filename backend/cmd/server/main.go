@@ -18,11 +18,15 @@ func main() {
 	_ = godotenv.Load()
 	cfg := config.Load()
 
-	db, err := database.Open(cfg.DBPath)
+	db, err := database.Open(cfg.MongoURI)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Client().Disconnect(nil); err != nil {
+			log.Println("Error disconnecting from MongoDB:", err)
+		}
+	}()
 
 	userRepo := repositories.NewUserRepository(db)
 	ticketRepo := repositories.NewTicketRepository(db)

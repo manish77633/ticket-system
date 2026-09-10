@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"ticket-system/backend/middleware"
 	"ticket-system/backend/repositories"
 	"ticket-system/backend/services"
@@ -31,12 +32,12 @@ type updateStatusRequest struct {
 	Status string `json:"status"`
 }
 
-func currentUserID(r *http.Request) (int64, bool) {
+func currentUserID(r *http.Request) (primitive.ObjectID, bool) {
 	return middleware.UserID(r.Context())
 }
 
-func parseID(r *http.Request) (int64, error) {
-	return strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+func parseID(r *http.Request) (primitive.ObjectID, error) {
+	return primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
 }
 
 func (h *TicketHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +80,7 @@ func (h *TicketHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, err := parseID(r)
-	if err != nil || id <= 0 {
+	if err != nil || id.IsZero() {
 		utils.Error(w, http.StatusBadRequest, "invalid ticket id")
 		return
 	}
@@ -102,7 +103,7 @@ func (h *TicketHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, err := parseID(r)
-	if err != nil || id <= 0 {
+	if err != nil || id.IsZero() {
 		utils.Error(w, http.StatusBadRequest, "invalid ticket id")
 		return
 	}

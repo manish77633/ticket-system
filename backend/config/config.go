@@ -8,7 +8,7 @@ import (
 type Config struct {
 	Port      string
 	JWTSecret string
-	DBPath    string
+	MongoURI  string
 }
 
 func Load() Config {
@@ -25,10 +25,14 @@ func Load() Config {
 		secret = "change-this-secret-in-production"
 	}
 
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "./ticket_system.db"
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017"
 	}
 
-	return Config{Port: port, JWTSecret: secret, DBPath: dbPath}
+	return Config{
+		Port:      port,
+		JWTSecret: secret,
+		MongoURI:  mongoURI,
+	}
 }

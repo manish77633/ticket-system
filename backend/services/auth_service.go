@@ -46,6 +46,6 @@ func (s *AuthService) Login(email, password string) (string, models.User, error)
 	if err != nil || !utils.CheckPassword(u.PasswordHash, password) {
 		return "", models.User{}, ErrInvalidCredentials
 	}
-	token, err := utils.GenerateToken(u.ID, s.secret)
+	token, err := utils.GenerateToken(u.ID.Hex(), s.secret)
 	return token, u, err
 }

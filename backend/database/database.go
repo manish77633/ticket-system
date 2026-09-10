@@ -1,39 +1,25 @@
 package database
 
 import (
-	"database/sql"
+	"context"
+	"time"
 
-	_ "modernc.org/sqlite"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Open(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", path)
+func Open(uri string) (*mongo.Database, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, err
 	}
 
-	schema := `
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL,
-		email TEXT NOT NULL UNIQUE,
-		password_hash TEXT NOT NULL,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS tickets (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		title TEXT NOT NULL,
-		description TEXT NOT NULL,
-		status TEXT NOT NULL DEFAULT 'open',
-		user_id INTEGER NOT NULL,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY(user_id) REFERENCES users(id)
-	);
-	`
-	if _, err = db.Exec(schema); err != nil {
-		db.Close()
+	if err := client.Ping(ctx, nil); err != nil {
 		return nil, err
 	}
-	return db, nil
+
+	return client.Database("ticket_system"), nil
 }

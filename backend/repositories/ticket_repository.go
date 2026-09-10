@@ -1,82 +1,98 @@
 package repositories
 
 import (
-	"database/sql"
+	"context"
 	"errors"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"ticket-system/backend/models"
 )
 
 type TicketRepository struct {
-	db *sql.DB
+	collection *mongo.Collection
 }
 
-func NewTicketRepository(db *sql.DB) *TicketRepository {
-	return &TicketRepository{db: db}
+func NewTicketRepository(db *mongo.Database) *TicketRepository {
+	return &TicketRepository{collection: db.Collection("tickets")}
 }
 
-func (r *TicketRepository) Create(title, description string, userID int64) (models.Ticket, error) {
-	res, err := r.db.Exec(
-		`INSERT INTO tickets(title,description,status,user_id) VALUES(?,?,?,?)`,
-		title, description, models.StatusOpen, userID,
-	)
+func (r *TicketRepository) Create(title, description string, userID primitive.ObjectID) (models.Ticket, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	t := models.Ticket{
+		ID:          primitive.NewObjectID(),
+		Title:       title,
+		Description: description,
+		Status:      models.StatusOpen,
+		UserID:      userID,
+		CreatedAt:   time.Now(),
+	}
+
+	_, err := r.collection.InsertOne(ctx, t)
 	if err != nil {
 		return models.Ticket{}, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return models.Ticket{}, err
-	}
-	return r.GetByID(id, userID)
+	return t, nil
 }
 
-func (r *TicketRepository) ListByUser(userID int64) ([]models.Ticket, error) {
-	rows, err := r.db.Query(
-		`SELECT id,title,description,status,user_id,created_at
-		 FROM tickets WHERE user_id=? ORDER BY id DESC`, userID,
-	)
+func (r *TicketRepository) ListByUser(userID primitive.ObjectID) ([]models.Ticket, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}})
+	cursor, err := r.collection.Find(ctx, bson.M{"user_id": userID}, opts)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer cursor.Close(ctx)
 
-	tickets := make([]models.Ticket, 0)
-	for rows.Next() {
-		var t models.Ticket
-		if err := rows.Scan(&t.ID,&t.Title,&t.Description,&t.Status,&t.UserID,&t.CreatedAt); err != nil {
-			return nil, err
-		}
-		tickets = append(tickets, t)
+	var tickets []models.Ticket
+	if err = cursor.All(ctx, &tickets); err != nil {
+		return nil, err
 	}
-	return tickets, rows.Err()
+	
+	if tickets == nil {
+		tickets = []models.Ticket{}
+	}
+	return tickets, nil
 }
 
-func (r *TicketRepository) GetByID(id, userID int64) (models.Ticket, error) {
+func (r *TicketRepository) GetByID(id, userID primitive.ObjectID) (models.Ticket, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	var t models.Ticket
-	err := r.db.QueryRow(
-		`SELECT id,title,description,status,user_id,created_at
-		 FROM tickets WHERE id=? AND user_id=?`, id, userID,
-	).Scan(&t.ID,&t.Title,&t.Description,&t.Status,&t.UserID,&t.CreatedAt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return models.Ticket{}, ErrNotFound
+	err := r.collection.FindOne(ctx, bson.M{"_id": id, "user_id": userID}).Decode(&t)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return models.Ticket{}, ErrNotFound
+		}
+		return models.Ticket{}, err
 	}
-	return t, err
+	return t, nil
 }
 
-func (r *TicketRepository) UpdateStatus(id, userID int64, status string) (models.Ticket, error) {
-	res, err := r.db.Exec(
-		`UPDATE tickets SET status=? WHERE id=? AND user_id=?`,
-		status, id, userID,
+func (r *TicketRepository) UpdateStatus(id, userID primitive.ObjectID, status string) (models.Ticket, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": id, "user_id": userID},
+		bson.M{"$set": bson.M{"status": status}},
 	)
 	if err != nil {
 		return models.Ticket{}, err
 	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return models.Ticket{}, err
-	}
-	if n == 0 {
+	if res.MatchedCount == 0 {
 		return models.Ticket{}, ErrNotFound
 	}
+
 	return r.GetByID(id, userID)
 }

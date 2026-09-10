@@ -6,6 +6,8 @@ import (
 
 	"ticket-system/backend/models"
 	"ticket-system/backend/repositories"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var ErrInvalidStatus = errors.New("invalid status")
@@ -19,7 +21,7 @@ func NewTicketService(tickets *repositories.TicketRepository) *TicketService {
 	return &TicketService{tickets: tickets}
 }
 
-func (s *TicketService) Create(title, description string, userID int64) (models.Ticket, error) {
+func (s *TicketService) Create(title, description string, userID primitive.ObjectID) (models.Ticket, error) {
 	title = strings.TrimSpace(title)
 	description = strings.TrimSpace(description)
 	if title == "" || description == "" {
@@ -28,15 +30,15 @@ func (s *TicketService) Create(title, description string, userID int64) (models.
 	return s.tickets.Create(title, description, userID)
 }
 
-func (s *TicketService) List(userID int64) ([]models.Ticket, error) {
+func (s *TicketService) List(userID primitive.ObjectID) ([]models.Ticket, error) {
 	return s.tickets.ListByUser(userID)
 }
 
-func (s *TicketService) Get(id, userID int64) (models.Ticket, error) {
+func (s *TicketService) Get(id, userID primitive.ObjectID) (models.Ticket, error) {
 	return s.tickets.GetByID(id, userID)
 }
 
-func (s *TicketService) UpdateStatus(id, userID int64, next string) (models.Ticket, error) {
+func (s *TicketService) UpdateStatus(id, userID primitive.ObjectID, next string) (models.Ticket, error) {
 	if next != models.StatusOpen && next != models.StatusInProgress && next != models.StatusClosed {
 		return models.Ticket{}, ErrInvalidStatus
 	}

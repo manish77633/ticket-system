@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateToken(userID int64, secret string) (string, error) {
+func GenerateToken(userID string, secret string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub": userID,
 		"exp": time.Now().Add(24 * time.Hour).Unix(),
@@ -16,7 +16,7 @@ func GenerateToken(userID int64, secret string) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
 
-func ParseToken(tokenString, secret string) (int64, error) {
+func ParseToken(tokenString, secret string) (string, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if t.Method != jwt.SigningMethodHS256 {
 			return nil, errors.New("unexpected signing method")
@@ -24,16 +24,16 @@ func ParseToken(tokenString, secret string) (int64, error) {
 		return []byte(secret), nil
 	})
 	if err != nil || !token.Valid {
-		return 0, errors.New("invalid token")
+		return "", errors.New("invalid token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return 0, errors.New("invalid claims")
+		return "", errors.New("invalid claims")
 	}
-	v, ok := claims["sub"].(float64)
+	v, ok := claims["sub"].(string)
 	if !ok {
-		return 0, errors.New("invalid subject")
+		return "", errors.New("invalid subject")
 	}
-	return int64(v), nil
+	return v, nil
 }
