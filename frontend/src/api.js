@@ -2,20 +2,20 @@
    api.js — Shared API client (fetch wrapper + JWT management)
    ============================================================ */
 
-const BASE = '/api'
+const BASE = 'https://ticket-system-81cp.onrender.com';
 const TOKEN_KEY = 'ticket_system_token'
-const USER_KEY  = 'ticket_system_user'
+const USER_KEY = 'ticket_system_user'
 
 // ── Token helpers ──────────────────────────────────────────
-export function getToken()  { return localStorage.getItem(TOKEN_KEY) }
+export function getToken() { return localStorage.getItem(TOKEN_KEY) }
 export function setToken(t) { localStorage.setItem(TOKEN_KEY, t) }
-export function removeToken(){ localStorage.removeItem(TOKEN_KEY) }
+export function removeToken() { localStorage.removeItem(TOKEN_KEY) }
 
-export function getUser()   {
+export function getUser() {
   try { return JSON.parse(localStorage.getItem(USER_KEY)) } catch { return null }
 }
-export function setUser(u)  { localStorage.setItem(USER_KEY, JSON.stringify(u)) }
-export function removeUser(){ localStorage.removeItem(USER_KEY) }
+export function setUser(u) { localStorage.setItem(USER_KEY, JSON.stringify(u)) }
+export function removeUser() { localStorage.removeItem(USER_KEY) }
 
 export function isLoggedIn() { return !!getToken() }
 
