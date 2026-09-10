@@ -37,7 +37,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 	ticketHandler := handlers.NewTicketHandler(ticketService)
 
-	router := routes.New(authHandler, ticketHandler, cfg.JWTSecret)
+	router := routes.New(authHandler, ticketHandler, cfg.JWTSecret, cfg.FrontendURL)
 
 	addr := ":" + cfg.Port
 	log.Printf("ticket-system backend running on %s", addr)

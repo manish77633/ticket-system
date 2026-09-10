@@ -8,9 +8,9 @@ import (
 	"ticket-system/backend/middleware"
 )
 
-func New(auth *handlers.AuthHandler, tickets *handlers.TicketHandler, jwtSecret string) http.Handler {
+func New(auth *handlers.AuthHandler, tickets *handlers.TicketHandler, jwtSecret, frontendURL string) http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.CORS)
+	r.Use(middleware.CORS(frontendURL))
 
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	Port      string
-	JWTSecret string
-	MongoURI  string
+	Port       string
+	JWTSecret  string
+	MongoURI   string
+	FrontendURL string
 }
 
 func Load() Config {
@@ -30,9 +31,15 @@ func Load() Config {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "*" // Default to all in development
+	}
+
 	return Config{
-		Port:      port,
-		JWTSecret: secret,
-		MongoURI:  mongoURI,
+		Port:        port,
+		JWTSecret:   secret,
+		MongoURI:    mongoURI,
+		FrontendURL: frontendURL,
 	}
 }
