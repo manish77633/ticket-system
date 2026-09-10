@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -34,6 +35,8 @@ func Load() Config {
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
 		frontendURL = "*" // Default to all in development
+	} else if frontendURL != "*" {
+		frontendURL = strings.TrimRight(frontendURL, "/")
 	}
 
 	return Config{
